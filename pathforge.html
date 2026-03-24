@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathforge — Adaptive CS Learning, Powered by AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#080e1a;
+  --bg1:#0a1220;
+  --bg2:#0e1929;
+  --surface:rgba(14,25,41,0.8);
+  --surface2:rgba(16,30,50,0.9);
+  --cyan:#00e5ff;
+  --cyan-dim:rgba(0,229,255,0.12);
+  --cyan-mid:rgba(0,229,255,0.35);
+  --amber:#ffb830;
+  --amber-dim:rgba(255,184,48,0.1);
+  --green:#22c55e;
+  --red:#f87171;
+  --blue:#3b82f6;
+  --white:#f0f6ff;
+  --white2:#8ba8c8;
+  --mid:#4a6080;
+  --border:rgba(0,229,255,0.1);
+  --border2:rgba(0,229,255,0.22);
+  --glow:0 0 40px rgba(0,229,255,0.18);
+  --glow-s:0 0 16px rgba(0,229,255,0.3);
+  --r:14px;
+  --r-s:8px;
+}
+
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{
+  background:var(--bg);color:var(--white);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:400;line-height:1.6;
+  overflow-x:hidden;cursor:none;
+}
+
+/* Cursor */
+#cur{position:fixed;width:10px;height:10px;background:var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:transform .15s}
+#cur-r{position:fixed;width:34px;height:34px;border:1px solid rgba(0,229,255,.45);border-radius:50%;
+  pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .2s,width .2s,height .2s}
+body:has(button:hover,a:hover,.clickable:hover) #cur{transform:translate(-50%,-50%) scale(2.2);background:var(--amber)}
+body:has(button:hover,a:hover,.clickable:hover) #cur-r{width:48px;height:48px;border-color:var(--amber)}
+
+canvas#c{position:fixed;inset:0;z-index:0;pointer-events:none}
+#progress{position:fixed;top:0;left:0;height:2px;z-index:500;
+  background:linear-gradient(90deg,var(--cyan),var(--amber));transition:width .08s;
+  box-shadow:0 0 10px rgba(0,229,255,.6)}
+
+/* Nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;
+  padding:18px 48px;display:flex;align-items:center;justify-content:space-between;
+  transition:background .4s,border-bottom .4s}
+nav.stuck{background:rgba(8,14,26,.88);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--cyan),#0080aa);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-weight:700;font-size:1rem;color:var(--bg);
+  box-shadow:0 0 14px rgba(0,229,255,.4)}
+.logo-name{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;color:var(--white);letter-spacing:-.01em}
+.logo-name em{color:var(--cyan);font-style:normal}
+.nav-links{display:flex;gap:36px;list-style:none}
+.nav-links a{font-size:.85rem;color:var(--white2);text-decoration:none;
+  letter-spacing:.01em;transition:color .2s}
+.nav-links a:hover{color:var(--white)}
+.nav-actions{display:flex;gap:12px;align-items:center}
+.btn-ghost{font-size:.82rem;color:var(--white2);background:none;border:none;cursor:none;
+  padding:8px 16px;border-radius:6px;transition:color .2s,background .2s;font-family:inherit}
+.btn-ghost:hover{color:var(--white);background:rgba(255,255,255,.05)}
+.btn-cta{font-size:.82rem;font-weight:600;padding:9px 22px;border-radius:6px;cursor:none;
+  background:var(--cyan);color:var(--bg);border:none;font-family:inherit;
+  transition:transform .18s,box-shadow .18s;letter-spacing:.01em}
+.btn-cta:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,229,255,.4)}
+
+/* Sections */
+main{position:relative;z-index:2}
+section{padding:110px 0;position:relative}
+.wrap{max-width:1160px;margin:0 auto;padding:0 48px}
+.wrap-wide{max-width:1320px;margin:0 auto;padding:0 48px}
+
+/* Typography */
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.eyebrow::before{content:'';width:28px;height:1px;background:var(--cyan)}
+h1{font-family:'Fraunces',serif;font-weight:800;
+  font-size:clamp(3rem,5.5vw,5rem);line-height:1.04;letter-spacing:-.03em;margin-bottom:28px}
+h2{font-family:'Fraunces',serif;font-weight:700;
+  font-size:clamp(2rem,3.2vw,2.8rem);line-height:1.1;letter-spacing:-.025em;margin-bottom:18px}
+h3{font-family:'Fraunces',serif;font-weight:600;font-size:1.25rem;line-height:1.3;margin-bottom:10px}
+.lead{font-size:1.1rem;color:var(--white2);line-height:1.85;max-width:540px}
+.mono{font-family:'JetBrains Mono',monospace}
+
+.grad{background:linear-gradient(135deg,var(--cyan) 0%,#60c8ff 45%,var(--amber) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.cyan{color:var(--cyan)}
+
+/* Reveal */
+.r{opacity:0;transform:translateY(36px);
+  transition:opacity .85s cubic-bezier(.16,1,.3,1),transform .85s cubic-bezier(.16,1,.3,1)}
+.r.on{opacity:1;transform:none}
+.r-l{opacity:0;transform:translateX(-44px);
+  transition:opacity .85s cubic-bezier(.16,1,.3,1),transform .85s cubic-bezier(.16,1,.3,1)}
+.r-l.on{opacity:1;transform:none}
+.r-r{opacity:0;transform:translateX(44px);
+  transition:opacity .85s cubic-bezier(.16,1,.3,1),transform .85s cubic-bezier(.16,1,.3,1)}
+.r-r.on{opacity:1;transform:none}
+
+/* ── HERO ── */
+#hero{min-height:100vh;display:flex;align-items:center;padding-top:88px;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,229,255,.08);border:1px solid var(--border2);border-radius:20px;
+  padding:6px 14px;font-size:.76rem;color:var(--cyan);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.06em;margin-bottom:28px}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);
+  animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 6px var(--cyan)}50%{opacity:.3;box-shadow:none}}
+.hero-actions{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap}
+.btn-primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.9rem;
+  padding:13px 30px;background:var(--cyan);color:var(--bg);border:none;border-radius:var(--r-s);
+  cursor:none;transition:transform .2s,box-shadow .2s;letter-spacing:.01em}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,229,255,.45)}
+.btn-outline{font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;font-size:.9rem;
+  padding:13px 30px;background:transparent;color:var(--white);
+  border:1px solid rgba(255,255,255,.18);border-radius:var(--r-s);
+  cursor:none;transition:border-color .2s,background .2s}
+.btn-outline:hover{border-color:var(--cyan-mid);background:var(--cyan-dim)}
+
+/* Hero right: LIVE DEMO WIDGET */
+.demo-shell{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);
+  overflow:hidden;position:relative;
+  box-shadow:0 32px 80px rgba(0,0,0,.5),var(--glow);
+}
+.demo-shell::before{content:'';position:absolute;top:-1px;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.demo-topbar{background:rgba(0,0,0,.25);padding:12px 18px;
+  display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.dot-r{width:10px;height:10px;border-radius:50%;background:#f87171}
+.dot-y{width:10px;height:10px;border-radius:50%;background:#fbbf24}
+.dot-g{width:10px;height:10px;border-radius:50%;background:#4ade80}
+.demo-title-bar{flex:1;text-align:center;font-family:'JetBrains Mono',monospace;
+  font-size:.68rem;color:var(--mid);letter-spacing:.08em}
+.demo-body{padding:24px}
+
+/* Mini Knowledge Graph SVG area */
+.kg-area{margin-bottom:20px;background:rgba(0,10,25,.4);border:1px solid var(--border);
+  border-radius:var(--r-s);padding:16px;position:relative;overflow:hidden}
+.kg-label{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--mid);
+  letter-spacing:.1em;margin-bottom:10px}
+#kg-svg{width:100%;height:100px}
+
+/* Question area */
+.q-box{margin-bottom:16px}
+.q-label{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--cyan);
+  letter-spacing:.1em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.q-label .q-tag{background:var(--cyan-dim);border:1px solid var(--border2);
+  border-radius:4px;padding:2px 8px}
+.q-text{font-size:.88rem;color:var(--white);line-height:1.6;margin-bottom:14px}
+.code-block{background:rgba(0,5,15,.6);border:1px solid var(--border);border-radius:var(--r-s);
+  padding:14px;font-family:'JetBrains Mono',monospace;font-size:.78rem;
+  color:#93c5fd;line-height:1.6;margin-bottom:14px;overflow-x:auto}
+.code-block .kw{color:var(--cyan)}.code-block .fn{color:#a78bfa}
+.code-block .num{color:var(--amber)}.code-block .cm{color:var(--mid)}
+.options{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:rgba(0,20,40,.5);border:1px solid var(--border);border-radius:var(--r-s);
+  cursor:none;transition:border-color .2s,background .2s;position:relative}
+.opt.clickable:hover{border-color:var(--cyan-mid);background:var(--cyan-dim)}
+.opt-letter{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--mid);
+  min-width:18px;font-weight:500}
+.opt-text{font-size:.83rem;color:var(--white2)}
+.opt.selected-wrong{border-color:var(--red);background:rgba(248,113,113,.08);animation:shake .3s}
+.opt.selected-right{border-color:var(--green);background:rgba(34,197,94,.08)}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.opt .opt-check{display:none;margin-left:auto;font-size:.85rem}
+.opt.selected-right .opt-check{display:block;color:var(--green)}
+.opt.selected-wrong .opt-check{display:block;color:var(--red)}
+
+/* AI Feedback */
+#ai-feedback{display:none;margin-top:14px;background:rgba(0,229,255,.04);
+  border:1px solid var(--cyan-mid);border-radius:var(--r-s);padding:14px;position:relative}
+#ai-feedback::before{content:'';position:absolute;top:-1px;left:20px;right:20px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.ai-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);
+  animation:blink 1.2s infinite}
+.ai-label{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--cyan);letter-spacing:.12em}
+#ai-text{font-size:.82rem;color:var(--white2);line-height:1.7}
+.ai-next{margin-top:12px;display:flex;justify-content:flex-end}
+.btn-next{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.75rem;
+  padding:7px 16px;background:var(--cyan);color:var(--bg);border:none;
+  border-radius:5px;cursor:none;transition:transform .15s;display:none}
+.btn-next:hover{transform:scale(1.04)}
+.mastery-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:12px}
+.mastery-label{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--mid);
+  white-space:nowrap;min-width:90px}
+.mastery-track{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:3px}
+.mastery-fill{height:100%;border-radius:3px;background:var(--cyan);transition:width 1s cubic-bezier(.16,1,.3,1)}
+
+/* Stats bar */
+#stats-bar{padding:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stats-inner{display:flex;justify-content:space-around;padding:48px 0}
+.stat-unit{text-align:center}
+.stat-n{font-family:'Fraunces',serif;font-weight:700;font-size:2.4rem;color:var(--white);
+  line-height:1;margin-bottom:6px}
+.stat-n span{color:var(--cyan)}
+.stat-d{font-size:.82rem;color:var(--white2);line-height:1.4}
+
+/* Feature sections */
+.feature-section{padding:100px 0}
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.feature-grid.flip{direction:rtl}.feature-grid.flip>*{direction:ltr}
+.feature-copy{}
+.feature-visual{border-radius:var(--r);overflow:hidden;position:relative}
+.fv-inner{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+  padding:28px;min-height:280px;position:relative;overflow:hidden}
+.fv-inner::before{content:'';position:absolute;top:-1px;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.fv-glow{position:absolute;width:180px;height:180px;border-radius:50%;filter:blur(50px);opacity:.14;
+  pointer-events:none}
+
+/* Feature 1: Knowledge Graph visual */
+#fg1-svg{width:100%;height:200px}
+
+/* Feature 2: Code feedback visual */
+.cf-window{background:rgba(0,5,15,.7);border:1px solid var(--border);border-radius:var(--r-s);
+  overflow:hidden;margin-bottom:12px}
+.cf-topbar{background:rgba(0,0,0,.3);padding:8px 14px;display:flex;align-items:center;gap:6px;
+  border-bottom:1px solid var(--border)}
+.cf-tab{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--mid);
+  padding:3px 10px;border-radius:3px}
+.cf-tab.active{background:rgba(0,229,255,.1);color:var(--cyan)}
+.cf-code{padding:14px;font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  line-height:1.7;color:#93c5fd}
+.cf-underline{border-bottom:2px solid var(--red);padding-bottom:1px}
+.cf-bubble{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);
+  border-radius:var(--r-s);padding:12px 14px;font-size:.8rem;color:var(--white2);
+  line-height:1.65;position:relative}
+.cf-bubble::before{content:'✦ Pathforge AI';display:block;font-family:'JetBrains Mono',monospace;
+  font-size:.62rem;color:var(--cyan);margin-bottom:6px;letter-spacing:.08em}
+.cf-fix{margin-top:8px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);
+  border-radius:var(--r-s);padding:10px;font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;color:#4ade80;line-height:1.6}
+.cf-fix::before{content:'Fix →  ';color:var(--green)}
+
+/* Feature 3: Analytics visual */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.analytic-card{background:rgba(0,10,25,.6);border:1px solid var(--border);
+  border-radius:var(--r-s);padding:14px}
+.ac-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.4rem;line-height:1}
+.ac-label{font-size:.72rem;color:var(--mid);margin-top:4px}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.hm-cell{height:14px;border-radius:2px;transition:transform .2s}
+.hm-cell:hover{transform:scale(1.3)}
+.hm-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--mid);margin-bottom:6px}
+
+/* Feature 4: IRT quiz visual */
+.irt-chart{margin-bottom:12px}
+.irt-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.irt-topic{font-size:.75rem;color:var(--white2);min-width:100px}
+.irt-track{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden}
+.irt-fill{height:100%;border-radius:6px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.irt-pct{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--mid);min-width:30px}
+.irt-next{background:rgba(0,10,25,.7);border:1px solid var(--border);border-radius:var(--r-s);padding:14px}
+.irt-diff{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.diff-chip{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:3px 9px;border-radius:10px}
+.diff-easy{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.diff-med{background:rgba(255,184,48,.12);color:var(--amber);border:1px solid rgba(255,184,48,.2)}
+.diff-hard{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+.irt-q{font-size:.82rem;color:var(--white2);line-height:1.6}
+
+/* Testimonial / social proof */
+#proof{background:var(--bg2)}
+.proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
+.proof-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:28px;transition:border-color .3s,transform .3s}
+.proof-card:hover{border-color:var(--border2);transform:translateY(-4px)}
+.proof-quote{font-size:.9rem;color:var(--white2);line-height:1.8;margin-bottom:20px;
+  font-style:italic}
+.proof-quote::before{content:'"';font-family:'Fraunces',serif;font-size:2rem;
+  color:var(--cyan);line-height:0;vertical-align:-.4em;margin-right:4px;opacity:.5}
+.proof-person{display:flex;align-items:center;gap:12px}
+.proof-avatar{width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.proof-name{font-size:.83rem;font-weight:600;color:var(--white);margin-bottom:2px}
+.proof-role{font-size:.73rem;color:var(--mid);font-family:'JetBrains Mono',monospace}
+
+/* How it works */
+#how{background:var(--bg)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:56px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.step{background:var(--bg1);padding:32px 24px;position:relative;overflow:hidden;transition:background .2s}
+.step:hover{background:var(--bg2)}
+.step-num{font-family:'Fraunces',serif;font-weight:700;font-size:3rem;color:rgba(0,229,255,.07);
+  line-height:1;margin-bottom:16px}
+.step-icon{font-size:1.4rem;margin-bottom:12px;display:block}
+.step-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.92rem;
+  color:var(--white);margin-bottom:8px}
+.step-desc{font-size:.8rem;color:var(--mid);line-height:1.65}
+.step::after{content:'→';position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-size:1.2rem;color:rgba(0,229,255,.15)}
+.step:last-child::after{display:none}
+
+/* CTA section */
+#cta{padding:130px 0;text-align:center;position:relative;overflow:hidden}
+#cta::before{content:'';position:absolute;top:50%;left:50%;
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,229,255,.06) 0%,transparent 65%);
+  transform:translate(-50%,-50%);pointer-events:none}
+.cta-wrap{max-width:600px;margin:0 auto;position:relative;z-index:1}
+.cta-wrap h2{font-size:clamp(2rem,3.5vw,3rem);margin-bottom:20px}
+.cta-wrap p{color:var(--white2);font-size:1rem;line-height:1.85;margin-bottom:36px}
+.email-row{display:flex;gap:10px;max-width:400px;margin:0 auto 24px}
+.email-input{flex:1;padding:12px 18px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);border-radius:var(--r-s);
+  color:var(--white);font-family:'Plus Jakarta Sans',sans-serif;font-size:.88rem;outline:none;
+  transition:border-color .2s}
+.email-input::placeholder{color:var(--mid)}
+.email-input:focus{border-color:var(--cyan-mid)}
+.tag-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.tag{padding:5px 14px;border-radius:20px;font-size:.75rem;color:var(--white2);
+  border:1px solid var(--border);font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:36px 48px;
+  display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+.footer-l{display:flex;align-items:center;gap:20px}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-size:.8rem;color:var(--mid);text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--white2)}
+.footer-r{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--mid)}
+
+@media(max-width:960px){
+  .hero-grid,.feature-grid,.proof-grid,.steps{grid-template-columns:1fr}
+  .feature-grid.flip{direction:ltr}
+  .analytics-grid{grid-template-columns:1fr 1fr}
+  .steps{border-radius:var(--r)}
+  .step::after{display:none}
+  nav .nav-links{display:none}
+  .wrap,.wrap-wide{padding:0 24px}
+  section,.feature-section{padding:70px 0}
+  .stats-inner{flex-wrap:wrap;gap:32px}
+  .email-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-r"></div>
+<div id="progress"></div>
+<canvas id="c"></canvas>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="logo" href="#hero">
+    <div class="logo-mark">P</div>
+    <span class="logo-name">Path<em>forge</em></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#cta">Early Access</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-ghost" onclick="showSignIn()">Sign In</button>
+    <button class="btn-cta" onclick="showEarlyAccess()">Get Early Access</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <!-- Left -->
+      <div>
+        <div class="hero-badge r"><div class="dot"></div>Now in Beta · VIT University</div>
+        <h1 class="r">Every student<br/>learns at their<br/><span class="grad">own speed.</span></h1>
+        <p class="lead r">Pathforge is an AI-powered tutoring system for CS undergraduates. It learns how you think, adapts in real time, and explains exactly why your code fails — not just that it does.</p>
+        <div class="hero-actions r">
+          <button class="btn-primary" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Start Learning Free</button>
+          <button class="btn-outline" onclick="document.getElementById('demo-section').scrollIntoView({behavior:'smooth'})">See It in Action</button>
+        </div>
+      </div>
+      <!-- Right: Live Demo Widget -->
+      <div class="r-r" id="demo-section">
+        <div class="demo-shell">
+          <div class="demo-topbar">
+            <div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div>
+            <div class="demo-title-bar mono">pathforge · adaptive session · arjun_v</div>
+          </div>
+          <div class="demo-body">
+            <!-- Mini KG -->
+            <div class="kg-area">
+              <div class="kg-label mono">KNOWLEDGE MAP · REAL-TIME</div>
+              <svg id="kg-svg" viewBox="0 0 440 100"></svg>
+            </div>
+            <!-- Question -->
+            <div class="q-box">
+              <div class="q-label">
+                <span class="mono">ADAPTIVE QUESTION</span>
+                <span class="q-tag mono">Complexity: Medium</span>
+              </div>
+              <div class="q-text" id="q-text">What is the time complexity of the following Python function?</div>
+              <div class="code-block" id="q-code">
+<span class="kw">def</span> <span class="fn">find_pairs</span>(arr, target):
+  seen = <span class="fn">set</span>()
+  <span class="kw">for</span> num <span class="kw">in</span> arr:  <span class="cm"># O(?)</span>
+    <span class="kw">if</span> target - num <span class="kw">in</span> seen:
+      <span class="kw">return True</span>
+    seen.<span class="fn">add</span>(num)
+  <span class="kw">return False</span>
+              </div>
+              <div class="options" id="options">
+                <div class="opt clickable" onclick="selectOpt(this,'wrong')"><span class="opt-letter">A</span><span class="opt-text">O(n²) — nested iteration over the set</span><span class="opt-check">✗</span></div>
+                <div class="opt clickable" onclick="selectOpt(this,'right')"><span class="opt-letter">B</span><span class="opt-text">O(n) — single pass with O(1) set lookups</span><span class="opt-check">✓</span></div>
+                <div class="opt clickable" onclick="selectOpt(this,'wrong')"><span class="opt-letter">C</span><span class="opt-text">O(log n) — binary search under the hood</span><span class="opt-check">✗</span></div>
+              </div>
+            </div>
+            <!-- AI Feedback (hidden until answered) -->
+            <div id="ai-feedback">
+              <div class="ai-header"><div class="ai-dot"></div><div class="ai-label mono">PATHFORGE AI  ·  CONCEPT TUTOR</div></div>
+              <div id="ai-text"></div>
+              <div class="ai-next"><button class="btn-next" id="btn-next" onclick="nextQ()">Next question →</button></div>
+            </div>
+            <!-- Mastery bars -->
+            <div id="mastery-section" style="margin-top:14px">
+              <div class="mastery-bar-wrap">
+                <div class="mastery-label mono" style="font-size:.6rem">Time Complexity</div>
+                <div class="mastery-track"><div class="mastery-fill" id="m1" style="width:42%"></div></div>
+                <div class="mono" style="font-size:.62rem;color:var(--cyan);min-width:28px" id="m1-txt">42%</div>
+              </div>
+              <div class="mastery-bar-wrap">
+                <div class="mastery-label mono" style="font-size:.6rem">Data Structures</div>
+                <div class="mastery-track"><div class="mastery-fill" id="m2" style="width:67%"></div></div>
+                <div class="mono" style="font-size:.62rem;color:var(--cyan);min-width:28px" id="m2-txt">67%</div>
+              </div>
+              <div class="mastery-bar-wrap">
+                <div class="mastery-label mono" style="font-size:.6rem">Recursion</div>
+                <div class="mastery-track"><div class="mastery-fill" id="m3" style="width:81%"></div></div>
+                <div class="mono" style="font-size:.62rem;color:var(--cyan);min-width:28px" id="m3-txt">81%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div id="stats-bar">
+  <div class="wrap">
+    <div class="stats-inner">
+      <div class="stat-unit r">
+        <div class="stat-n"><span data-target="54">0</span>%</div>
+        <div class="stat-d">higher test scores vs.<br/>traditional instruction</div>
+      </div>
+      <div class="stat-unit r">
+        <div class="stat-n"><span data-target="40">0</span>%</div>
+        <div class="stat-d">faster knowledge gap<br/>closure with DKT</div>
+      </div>
+      <div class="stat-unit r">
+        <div class="stat-n"><span data-target="24">0</span>/7</div>
+        <div class="stat-d">AI tutoring available<br/>no waiting, no office hours</div>
+      </div>
+      <div class="stat-unit r">
+        <div class="stat-n"><span data-target="70">0</span>+</div>
+        <div class="stat-d">students in current<br/>pilot cohort</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<div id="features">
+
+  <!-- F1: Knowledge Graph -->
+  <div class="feature-section">
+    <div class="wrap">
+      <div class="feature-grid">
+        <div class="feature-copy r-l">
+          <div class="eyebrow">Adaptive Intelligence</div>
+          <h2>It knows exactly<br/>where you're stuck.</h2>
+          <p style="color:var(--white2);line-height:1.85;max-width:460px;margin-bottom:24px">Pathforge builds a live knowledge graph of every CS concept and tracks your mastery of each one in real time. When you get a question wrong, it doesn't just move on — it finds the upstream concept you never fully understood and routes you back to it.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--cyan);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--cyan)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Deep Knowledge Tracing (DKT) models your learning state after every interaction</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--cyan);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--cyan)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Concept dependency graph sequences your next topic automatically</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--cyan);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--cyan)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">No two students follow the same path through the curriculum</div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-visual r-r">
+          <div class="fv-inner">
+            <div class="fv-glow" style="background:var(--cyan);top:-40px;right:-40px"></div>
+            <svg id="fg1-svg" viewBox="0 0 400 200"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F2: LLM Code Feedback -->
+  <div class="feature-section" style="background:var(--bg2)">
+    <div class="wrap">
+      <div class="feature-grid flip">
+        <div class="feature-copy r-r">
+          <div class="eyebrow">AI Code Review</div>
+          <h2>Not just wrong.<br/>Here's <em style="font-style:normal;color:var(--cyan)">why.</em></h2>
+          <p style="color:var(--white2);line-height:1.85;max-width:460px;margin-bottom:24px">When your code fails, Pathforge's AI tutor retrieves the exact concept documentation relevant to your mistake and explains it in plain language — with a specific fix. Like a senior dev pairing with you, available instantly, every time.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--amber);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--amber)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">RAG pipeline grounds every explanation in actual CS documentation</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height;6px;border-radius:50%;background:var(--amber);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--amber)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Line-level annotations — not vague hints</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--amber);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--amber)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Feedback adapts to your current skill level, not a generic template</div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-visual r-l">
+          <div class="fv-inner">
+            <div class="fv-glow" style="background:var(--amber);top:-40px;left:-40px"></div>
+            <div class="cf-window">
+              <div class="cf-topbar">
+                <div class="cf-tab active">solution.py</div>
+                <div class="cf-tab">test_cases.py</div>
+              </div>
+              <div class="cf-code">
+<span style="color:var(--mid)">1</span>  <span style="color:var(--cyan)">def</span> <span style="color:#a78bfa">reverse_list</span>(lst):
+<span style="color:var(--mid)">2</span>    <span style="color:var(--cyan)">for</span> i <span style="color:var(--cyan)">in</span> <span style="color:#a78bfa">range</span>(<span style="color:var(--amber)">len</span>(lst)):
+<span style="color:var(--mid)">3</span>      lst[i], lst[<span class="cf-underline"><span style="color:var(--amber)">len</span>(lst) - i</span>] = \
+<span style="color:var(--mid)">4</span>        lst[<span style="color:var(--amber)">len</span>(lst) - i], lst[i]
+<span style="color:var(--mid)">5</span>    <span style="color:var(--cyan)">return</span> lst
+              </div>
+            </div>
+            <div class="cf-bubble">
+              Line 3 has an off-by-one error. <code style="color:var(--red)">len(lst) - i</code> accesses index out of bounds on the first iteration. Python list indices are zero-based, so the last element is at <code style="color:var(--cyan)">len(lst) - 1</code>.
+              <div class="cf-fix">lst[i], lst[len(lst) - 1 - i] = lst[len(lst) - 1 - i], lst[i]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F3: Analytics -->
+  <div class="feature-section">
+    <div class="wrap">
+      <div class="feature-grid">
+        <div class="feature-copy r-l">
+          <div class="eyebrow">Instructor Dashboard</div>
+          <h2>Your whole class,<br/>at a glance.</h2>
+          <p style="color:var(--white2);line-height:1.85;max-width:460px;margin-bottom:24px">Pathforge gives instructors a real-time view of cohort performance. See which concepts are causing the most failures, who's falling behind before they fail an exam, and how engagement changes week over week.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--blue);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--blue)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Per-student mastery maps and learning velocity metrics</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--blue);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--blue)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Automated at-risk alerts 2–3 weeks before exam season</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--blue);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--blue)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Concept-level heatmaps showing where the cohort is struggling</div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-visual r-r">
+          <div class="fv-inner">
+            <div class="fv-glow" style="background:var(--blue);top:-40px;right:-40px"></div>
+            <div class="analytics-grid">
+              <div class="analytic-card">
+                <div class="ac-val" style="color:var(--cyan)">68<span style="font-size:.9rem">%</span></div>
+                <div class="ac-label">Avg. Mastery<br/>This Week</div>
+              </div>
+              <div class="analytic-card">
+                <div class="ac-val" style="color:var(--red)">7</div>
+                <div class="ac-label">At-Risk<br/>Students ⚠</div>
+              </div>
+              <div class="analytic-card">
+                <div class="ac-val" style="color:var(--green)">+12<span style="font-size:.9rem">%</span></div>
+                <div class="ac-label">Engagement<br/>vs. Last Week</div>
+              </div>
+              <div class="analytic-card">
+                <div class="ac-val" style="color:var(--amber)">4.2<span style="font-size:.9rem">h</span></div>
+                <div class="ac-label">Avg. Active<br/>Time / Student</div>
+              </div>
+            </div>
+            <div class="hm-label mono">CONCEPT DIFFICULTY HEATMAP · CS BATCH A</div>
+            <div class="heatmap" id="heatmap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F4: Adaptive Assessment -->
+  <div class="feature-section" style="background:var(--bg2)">
+    <div class="wrap">
+      <div class="feature-grid flip">
+        <div class="feature-copy r-r">
+          <div class="eyebrow">Adaptive Assessment</div>
+          <h2>Questions that<br/>grow with you.</h2>
+          <p style="color:var(--white2);line-height:1.85;max-width:460px;margin-bottom:24px">Pathforge uses Item Response Theory to calibrate each question's difficulty to your exact ability level. Answer correctly and the next question gets harder. Struggle, and it drops back to the concept root — with a 3-minute microlearning card before you retry.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--green)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">IRT-calibrated difficulty updates after each response</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--green)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Spaced repetition schedules review sessions at optimal intervals</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:7px;flex-shrink:0;box-shadow:0 0 8px var(--green)"></div>
+              <div style="font-size:.88rem;color:var(--white2)">Micro-lessons trigger on wrong answers before any re-attempt</div>
+            </div>
+          </div>
+        </div>
+        <div class="feature-visual r-l">
+          <div class="fv-inner">
+            <div class="fv-glow" style="background:var(--green);top:-40px;left:-40px"></div>
+            <div class="irt-chart">
+              <div class="hm-label mono" style="margin-bottom:10px">YOUR MASTERY PROFILE</div>
+              <div class="irt-bar-row"><div class="irt-topic">Time Complexity</div><div class="irt-track"><div class="irt-fill" data-w="82%" style="background:var(--green);width:0"></div></div><div class="irt-pct">82%</div></div>
+              <div class="irt-bar-row"><div class="irt-topic">Sorting Algorithms</div><div class="irt-track"><div class="irt-fill" data-w="61%" style="background:var(--amber);width:0"></div></div><div class="irt-pct">61%</div></div>
+              <div class="irt-bar-row"><div class="irt-topic">Graph Traversal</div><div class="irt-track"><div class="irt-fill" data-w="38%" style="background:var(--red);width:0"></div></div><div class="irt-pct">38%</div></div>
+              <div class="irt-bar-row"><div class="irt-topic">Dynamic Programming</div><div class="irt-track"><div class="irt-fill" data-w="24%" style="background:var(--red);width:0"></div></div><div class="irt-pct">24%</div></div>
+              <div class="irt-bar-row"><div class="irt-topic">OOP Patterns</div><div class="irt-track"><div class="irt-fill" data-w="75%" style="background:var(--green);width:0"></div></div><div class="irt-pct">75%</div></div>
+            </div>
+            <div class="irt-next">
+              <div class="irt-diff"><span style="font-size:.72rem;color:var(--mid);margin-right:4px">Next question:</span><span class="diff-chip diff-hard">HARD</span><span style="font-size:.7rem;color:var(--mid);margin-left:6px">Graph Traversal → DFS</span></div>
+              <div class="irt-q">Given an undirected graph G, write a function to detect if a cycle exists using depth-first search. What is the key condition to check?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /features -->
+
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="eyebrow r">The System</div>
+    <h2 class="r">How Pathforge adapts<br/>to every student.</h2>
+    <div class="steps r">
+      <div class="step">
+        <div class="step-num">01</div>
+        <span class="step-icon">🧠</span>
+        <div class="step-title">You answer a question</div>
+        <div class="step-desc">Pathforge observes your response — right or wrong — and updates your live knowledge model in milliseconds.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <span class="step-icon">🗺️</span>
+        <div class="step-title">Your path updates</div>
+        <div class="step-desc">The knowledge graph recalculates. If you slipped on a concept, it traces back to the root and routes you there first.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <span class="step-icon">💬</span>
+        <div class="step-title">AI explains the gap</div>
+        <div class="step-desc">The AI tutor generates a targeted explanation — grounded in real documentation — and a specific fix for your code.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <span class="step-icon">📈</span>
+        <div class="step-title">Mastery grows</div>
+        <div class="step-desc">Spaced repetition schedules your next review at the optimal moment. You always work at the edge of what you know.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="wrap">
+    <div class="cta-wrap r">
+      <div class="eyebrow" style="justify-content:center">Early Access · VIT Students</div>
+      <h2>Start your adaptive<br/><span class="grad">learning journey.</span></h2>
+      <p>Pathforge is live in beta for VIT CS students. Join the cohort, get full access, and learn at your own pace — with an AI that actually understands CS.</p>
+      <div class="email-row">
+        <input class="email-input" type="email" placeholder="your.email@vit.ac.in"/>
+        <button class="btn-primary" onclick="submitEmail()">Get Access</button>
+      </div>
+      <div class="tag-row">
+        <div class="tag">Free for students</div>
+        <div class="tag">No credit card</div>
+        <div class="tag">Works on any device</div>
+        <div class="tag">Python · DSA · OOP</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="footer-l">
+    <a class="logo" href="#hero">
+      <div class="logo-mark" style="width:26px;height:26px;font-size:.85rem">P</div>
+      <span class="logo-name" style="font-size:.95rem">Path<em>forge</em></span>
+    </a>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Research</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="footer-r">Built at VIT University · 2026</div>
+</footer>
+
+<script>
+// ── Three.js background ──────────────────────────────────────────────────
+(()=>{
+  const canvas=document.getElementById('c');
+  const R=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  R.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  R.setSize(innerWidth,innerHeight);
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,600);
+  cam.position.z=90;
+
+  // Floating particles
+  const N=180;
+  const pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*220;
+    pos[i*3+1]=(Math.random()-.5)*140;
+    pos[i*3+2]=(Math.random()-.5)*100;
+  }
+  const pg=new THREE.BufferGeometry();
+  pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const pm=new THREE.PointsMaterial({color:0x00e5ff,size:0.35,transparent:true,opacity:0.22});
+  scene.add(new THREE.Points(pg,pm));
+
+  // Grid plane
+  const grid=new THREE.GridHelper(300,40,0x001a33,0x001a33);
+  grid.position.y=-40;grid.rotation.x=0.1;grid.material.opacity=0.4;grid.material.transparent=true;
+  scene.add(grid);
+
+  // Torus ring
+  const tg=new THREE.TorusGeometry(28,0.15,8,80);
+  const tm=new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:0.08,wireframe:false});
+  const torus=new THREE.Mesh(tg,tm);torus.rotation.x=Math.PI/4;
+  scene.add(torus);
+
+  const tg2=new THREE.TorusGeometry(18,0.1,8,60);
+  const tm2=tm.clone();tm2.opacity=0.06;
+  const torus2=new THREE.Mesh(tg2,tm2);torus2.rotation.x=-Math.PI/5;torus2.rotation.z=0.5;
+  scene.add(torus2);
+
+  let mx=0,my=0;
+  document.addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2;});
+
+  (function tick(t){
+    requestAnimationFrame(tick);t*=0.001;
+    torus.rotation.y=t*0.12;torus.rotation.z=t*0.06;
+    torus2.rotation.y=-t*0.09;torus2.rotation.x=-Math.PI/5+t*0.04;
+    grid.position.z=(t*2)%7.5-3.75;
+    cam.position.x+=(.05*(mx*6-cam.position.x));
+    cam.position.y+=(.04*(-my*4-cam.position.y));
+    cam.lookAt(0,0,0);
+    R.render(scene,cam);
+  })(0);
+
+  window.addEventListener('resize',()=>{
+    cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
+    R.setSize(innerWidth,innerHeight);
+  });
+})();
+
+// ── Cursor ───────────────────────────────────────────────────────────────
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-r');
+let rx=0,ry=0,cx=0,cy=0;
+document.addEventListener('mousemove',e=>{cx=e.clientX;cy=e.clientY;});
+(function animC(){rx+=(cx-rx)*.15;ry+=(cy-ry)*.15;
+  cur.style.cssText=`left:${cx}px;top:${cy}px`;
+  ring.style.cssText=`left:${rx}px;top:${ry}px`;
+  requestAnimationFrame(animC)})();
+
+// ── Nav stuck ────────────────────────────────────────────────────────────
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('stuck',scrollY>50);
+  const p=scrollY/(document.body.scrollHeight-innerHeight);
+  document.getElementById('progress').style.width=(p*100)+'%';
+},{passive:true});
+
+// ── Reveal on scroll ─────────────────────────────────────────────────────
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const siblings=Array.from(e.target.parentElement.children).filter(c=>c.classList.contains('r')||c.classList.contains('r-l')||c.classList.contains('r-r'));
+      const idx=siblings.indexOf(e.target);
+      setTimeout(()=>e.target.classList.add('on'),idx*70);
+    }
+  });
+},{threshold:.1});
+document.querySelectorAll('.r,.r-l,.r-r').forEach(el=>obs.observe(el));
+
+// ── Counter animation ────────────────────────────────────────────────────
+const cObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('[data-target]').forEach(el=>{
+        const t=+el.dataset.target,s=Date.now();const d=1400;
+        const tick=()=>{const p=Math.min((Date.now()-s)/d,1);const v=Math.round(t*( 1-Math.pow(1-p,3)));
+          el.textContent=v;if(p<1)requestAnimationFrame(tick);};tick();
+      });
+      cObs.unobserve(e.target);
+    }
+  });
+},{threshold:.4});
+document.querySelectorAll('#stats-bar').forEach(el=>cObs.observe(el));
+
+// ── IRT bar animation ────────────────────────────────────────────────────
+const irtObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.irt-fill[data-w]').forEach((el,i)=>{
+        setTimeout(()=>el.style.width=el.dataset.w,i*120+200);
+      });irtObs.unobserve(e.target);
+    }
+  });
+},{threshold:.3});
+document.querySelectorAll('.irt-chart').forEach(el=>irtObs.observe(el));
+
+// ── Knowledge Graph SVG (Hero mini) ──────────────────────────────────────
+function buildKG(){
+  const svg=document.getElementById('kg-svg');
+  const nodes=[
+    {id:'arr',x:40,y:50,label:'Arrays',color:'#00e5ff',mastery:.9},
+    {id:'ptr',x:110,y:25,label:'Pointers',color:'#00e5ff',mastery:.75},
+    {id:'ll',x:110,y:75,label:'Linked List',color:'#00e5ff',mastery:.6},
+    {id:'rec',x:190,y:50,label:'Recursion',color:'#ffb830',mastery:.45},
+    {id:'sort',x:270,y:25,label:'Sorting',color:'#4ade80',mastery:.82},
+    {id:'tc',x:270,y:75,label:'Complexity',color:'#f87171',mastery:.3},
+    {id:'dp',x:360,y:50,label:'Dyn. Prog.',color:'#f87171',mastery:.2},
+  ];
+  const edges=[['arr','ptr'],['arr','ll'],['ptr','rec'],['ll','rec'],['rec','sort'],['rec','tc'],['sort','dp'],['tc','dp']];
+  let html='';
+  edges.forEach(([a,b])=>{
+    const na=nodes.find(n=>n.id===a),nb=nodes.find(n=>n.id===b);
+    html+=`<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" stroke="rgba(0,229,255,0.18)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  });
+  nodes.forEach(n=>{
+    const r=8+n.mastery*6;
+    html+=`<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${n.color}22" stroke="${n.color}" stroke-width="1.5"/>`;
+    html+=`<text x="${n.x}" y="${n.y+24}" fill="#8ba8c8" font-size="8" font-family="JetBrains Mono" text-anchor="middle">${n.label}</text>`;
+    // Mastery arc
+    const circ=2*Math.PI*r,dash=circ*n.mastery;
+    html+=`<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="none" stroke="${n.color}" stroke-width="2" stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ*.25}" style="opacity:.7"/>`;
+  });
+  svg.innerHTML=html;
+  // Pulse current node
+  const cur=nodes[3];// Recursion - current
+  svg.innerHTML+=`<circle cx="${cur.x}" cy="${cur.y}" r="18" fill="none" stroke="${cur.color}" stroke-width="1" opacity="0.4"><animate attributeName="r" values="18;26;18" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".4;0;.4" dur="2s" repeatCount="indefinite"/></circle>`;
+}
+buildKG();
+
+// ── Feature KG (Large) ───────────────────────────────────────────────────
+function buildFeatureKG(){
+  const svg=document.getElementById('fg1-svg');
+  const nodes=[
+    {x:40,y:100,label:'Variables',color:'#00e5ff',sz:12,m:.95},
+    {x:110,y:60,label:'Arrays',color:'#00e5ff',sz:14,m:.9},
+    {x:110,y:140,label:'Functions',color:'#00e5ff',sz:12,m:.85},
+    {x:200,y:40,label:'Recursion',color:'#ffb830',sz:16,m:.55},
+    {x:200,y:100,label:'Pointers',color:'#00e5ff',sz:12,m:.78},
+    {x:200,y:160,label:'OOP',color:'#4ade80',sz:14,m:.82},
+    {x:300,y:60,label:'Sorting',color:'#4ade80',sz:15,m:.71},
+    {x:300,y:130,label:'Trees',color:'#f87171',sz:14,m:.38},
+    {x:360,y:80,label:'Graphs',color:'#f87171',sz:14,m:.3},
+    {x:360,y:150,label:'Dyn. Prog.',color:'#f87171',sz:12,m:.2},
+  ];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[3,6],[4,7],[5,7],[6,8],[7,8],[7,9],[8,9]];
+  let h='';
+  edges.forEach(([a,b])=>{
+    h+=`<line x1="${nodes[a].x}" y1="${nodes[a].y}" x2="${nodes[b].x}" y2="${nodes[b].y}" stroke="rgba(0,229,255,0.12)" stroke-width="1.5"/>`;
+  });
+  nodes.forEach(n=>{
+    const circ=2*Math.PI*n.sz,dash=circ*n.m;
+    h+=`<circle cx="${n.x}" cy="${n.y}" r="${n.sz}" fill="${n.color}18" stroke="${n.color}55" stroke-width="1.5"/>`;
+    h+=`<circle cx="${n.x}" cy="${n.y}" r="${n.sz}" fill="none" stroke="${n.color}" stroke-width="2" stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ*.25}" style="opacity:.8"/>`;
+    h+=`<text x="${n.x}" y="${n.y+n.sz+12}" fill="#8ba8c8" font-size="8.5" font-family="JetBrains Mono" text-anchor="middle">${n.label}</text>`;
+  });
+  // Current focus pulse
+  const c=nodes[3];
+  h+=`<circle cx="${c.x}" cy="${c.y}" r="22" fill="none" stroke="${c.color}" stroke-width="1" opacity="0.3"><animate attributeName="r" values="22;32;22" dur="2.5s" repeatCount="indefinite"/><animate attributeName="opacity" values=".3;0;.3" dur="2.5s" repeatCount="indefinite"/></circle>`;
+  svg.innerHTML=h;
+}
+buildFeatureKG();
+
+// ── Heatmap ──────────────────────────────────────────────────────────────
+(()=>{
+  const map=document.getElementById('heatmap');
+  const concepts=['Arrays','Recursion','Sorting','Trees','Graphs','DP','OOP'];
+  const students=7;
+  const palette=['#1a1f2e','#0e3a5a','#0d6b8a','#0d9488','#22c55e'];
+  concepts.forEach(c=>{
+    for(let i=0;i<students;i++){
+      const v=Math.random();
+      const ci=Math.floor(v*palette.length);
+      const el=document.createElement('div');
+      el.className='hm-cell clickable';
+      el.style.background=palette[ci];
+      el.title=`${c} · Student ${i+1} · ${Math.round(v*100)}%`;
+      map.appendChild(el);
+    }
+  });
+})();
+
+// ── Demo Quiz Logic ──────────────────────────────────────────────────────
+const questions=[
+  {
+    text:'What is the time complexity of the following Python function?',
+    code:`<span class="kw">def</span> <span class="fn">find_pairs</span>(arr, target):
+  seen = <span class="fn">set</span>()
+  <span class="kw">for</span> num <span class="kw">in</span> arr:  <span class="cm"># O(?)</span>
+    <span class="kw">if</span> target - num <span class="kw">in</span> seen:
+      <span class="kw">return True</span>
+    seen.<span class="fn">add</span>(num)
+  <span class="kw">return False</span>`,
+    opts:[
+      {text:'O(n²) — nested iteration over the set',correct:false},
+      {text:'O(n) — single pass with O(1) set lookups',correct:true},
+      {text:'O(log n) — binary search under the hood',correct:false},
+    ],
+    feedback:{
+      wrong:'Set lookups in Python use a hash table, so <code style="color:var(--cyan)">x in seen</code> is O(1) — not O(n²) like nested loops would be. The loop runs once, and each iteration does constant work.',
+      right:'Exactly right. The hash set gives O(1) average-case lookup. One loop = O(n). No nested iteration exists here, so O(n²) is wrong. The answer can never be O(log n) without a sorted structure.',
+      masteryDelta:[18,5,0]
+    }
+  },
+  {
+    text:'Which data structure would give the most efficient implementation of a priority queue?',
+    code:`<span class="cm"># We need: insert, get_min, delete_min</span>
+<span class="cm"># Frequent: get_min() called after every insert</span>
+<span class="cm"># Choose the best data structure below:</span>`,
+    opts:[
+      {text:'Sorted Array — always ordered, O(1) min access',correct:false},
+      {text:'Unsorted Linked List — O(1) insert, scan for min',correct:false},
+      {text:'Binary Min-Heap — O(log n) insert, O(1) get_min',correct:true},
+    ],
+    feedback:{
+      wrong:'A sorted array has O(n) insertion since elements shift to maintain order. An unsorted list has O(1) insert but O(n) get_min. The Binary Min-Heap gives the best balance: O(log n) insert and O(1) min access.',
+      right:'Perfect. The Binary Min-Heap is the canonical priority queue implementation. The root is always the minimum (O(1) access), and heapify operations keep insertions at O(log n). Python\'s <code style="color:var(--cyan)">heapq</code> module implements exactly this.',
+      masteryDelta:[0,14,8]
+    }
+  }
+];
+let qIdx=0,answered=false;
+
+function selectOpt(el,type){
+  if(answered)return;
+  answered=true;
+  const q=questions[qIdx];
+  const isCorrect=(type==='right');
+  el.classList.add(isCorrect?'selected-right':'selected-wrong');
+  el.querySelector('.opt-check').style.display='block';
+  // Disable all opts
+  document.querySelectorAll('.opt').forEach(o=>{o.classList.remove('clickable');o.style.cursor='default';});
+  // Show feedback
+  const fb=document.getElementById('ai-feedback');
+  fb.style.display='block';
+  const txt=document.getElementById('ai-text');
+  const msg=isCorrect?q.feedback.right:q.feedback.wrong;
+  // Typewriter
+  txt.innerHTML='';let i=0;
+  const plain=msg.replace(/<[^>]*>/g,'');
+  const chars=msg.split('');let out='';let inTag=false;
+  function typeNext(){
+    if(i>=chars.length){
+      document.getElementById('btn-next').style.display='inline-block';
+      // Update mastery
+      const deltas=q.feedback.masteryDelta;
+      animateMastery(deltas,isCorrect);
+      return;
+    }
+    if(chars[i]==='<')inTag=true;
+    if(inTag){out+=chars[i];if(chars[i]==='>'){inTag=false;txt.innerHTML=out;}}
+    else{out+=chars[i];txt.innerHTML=out;}
+    i++;setTimeout(typeNext,isCorrect?12:10);
+  }
+  setTimeout(typeNext,200);
+}
+
+function animateMastery(deltas,correct){
+  const fills=[document.getElementById('m1'),document.getElementById('m2'),document.getElementById('m3')];
+  const txts=[document.getElementById('m1-txt'),document.getElementById('m2-txt'),document.getElementById('m3-txt')];
+  const bases=[42,67,81];
+  deltas.forEach((d,i)=>{
+    if(d===0)return;
+    const newW=Math.min(bases[i]+(correct?d:-Math.round(d*.3)),99);
+    fills[i].style.width=newW+'%';
+    txts[i].textContent=newW+'%';
+    if(correct&&d>0) fills[i].style.boxShadow='0 0 8px var(--cyan)';
+  });
+  // Update KG
+  updateKGNode(qIdx,correct);
+}
+
+function updateKGNode(qi,correct){
+  const svg=document.getElementById('kg-svg');
+  // Flash the active node
+  const circles=svg.querySelectorAll('circle');
+  if(circles[3]){
+    circles[3].style.fill=correct?'rgba(34,197,94,.3)':'rgba(248,113,113,.2)';
+    circles[3].setAttribute('stroke',correct?'#22c55e':'#f87171');
+  }
+}
+
+function nextQ(){
+  qIdx=(qIdx+1)%questions.length;
+  answered=false;
+  const q=questions[qIdx];
+  document.getElementById('q-text').textContent=q.text;
+  document.getElementById('q-code').innerHTML=q.code;
+  const optEls=document.querySelectorAll('.opt');
+  q.opts.forEach((o,i)=>{
+    optEls[i].className='opt clickable';
+    optEls[i].querySelector('.opt-text').textContent=o.text;
+    optEls[i].querySelector('.opt-check').style.display='none';
+    optEls[i].onclick=function(){selectOpt(this,o.correct?'right':'wrong')};
+  });
+  document.getElementById('ai-feedback').style.display='none';
+  document.getElementById('btn-next').style.display='none';
+  buildKG();
+}
+
+// ── Button Functions ─────────────────────────────────────────────────────
+function showSignIn() {
+  // Create a simple modal for sign in
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(8, 14, 26, 0.95); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); padding: 40px; max-width: 400px; width: 90%;">
+      <h2 style="margin-bottom: 20px; color: var(--white);">Sign In to Pathforge</h2>
+      <input type="email" placeholder="VIT Email Address" style="width: 100%; padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: var(--r-s); color: var(--white); font-family: inherit;">
+      <input type="password" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: var(--r-s); color: var(--white); font-family: inherit;">
+      <button onclick="this.closest('div').parentElement.remove()" style="width: 100%; padding: 12px; background: var(--cyan); color: var(--bg); border: none; border-radius: var(--r-s); font-weight: 600; cursor: pointer;">Sign In</button>
+      <p style="margin-top: 16px; text-align: center; color: var(--mid); font-size: 0.85rem;">
+        Don't have an account? <a href="#cta" onclick="this.closest('div').parentElement.remove()" style="color: var(--cyan);">Get Early Access</a>
+      </p>
+    </div>
+  `;
+  
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.remove();
+  };
+  document.body.appendChild(modal);
+}
+
+function showEarlyAccess() {
+  document.getElementById('cta').scrollIntoView({behavior: 'smooth'});
+}
+
+function submitEmail() {
+  const emailInput = document.querySelector('.email-input');
+  const email = emailInput.value.trim();
+  
+  if (!email) {
+    emailInput.style.borderColor = 'var(--red)';
+    emailInput.placeholder = 'Please enter your email';
+    return;
+  }
+  
+  if (!email.endsWith('@vit.ac.in') && !email.endsWith('@vitstudent.ac.in')) {
+    emailInput.style.borderColor = 'var(--red)';
+    emailInput.value = '';
+    emailInput.placeholder = 'Please use your VIT email (@vit.ac.in or @vitstudent.ac.in)';
+    return;
+  }
+  
+  // Generate and send email draft
+  generateEmailDraft(email);
+  
+  // Success feedback
+  const button = emailInput.nextElementSibling;
+  const originalText = button.textContent;
+  button.textContent = '✓ Welcome email sent!';
+  button.style.background = 'var(--green)';
+  emailInput.style.borderColor = 'var(--green)';
+  
+  setTimeout(() => {
+    button.textContent = originalText;
+    button.style.background = 'var(--cyan)';
+    emailInput.value = '';
+    emailInput.style.borderColor = 'rgba(255,255,255,0.14)';
+    emailInput.placeholder = 'your.email@vit.ac.in';
+  }, 3000);
+}
+
+function generateEmailDraft(email) {
+  const subject = encodeURIComponent('Welcome to Pathforge - Your AI CS Tutor is Ready!');
+  const body = encodeURIComponent(`Hi there!
+
+Welcome to Pathforge! 🚀
+
+Your early access request has been received. Here's what happens next:
+
+✅ Your account is being set up
+✅ You'll get full access to our AI-powered CS tutoring system
+✅ Start learning Python, DSA, and OOP with personalized guidance
+
+What makes Pathforge different:
+• AI that understands exactly where you're stuck
+• Real-time code explanations with specific fixes
+• Adaptive questions that match your skill level
+• 24/7 tutoring - no waiting for office hours
+
+Get started in 3 simple steps:
+1. Check your VIT email for your login credentials (arriving within 24 hours)
+2. Sign in and take our quick placement test
+3. Start your personalized learning journey
+
+Ready to transform how you learn CS? Your AI tutor is waiting!
+
+Best regards,
+The Pathforge Team
+VIT University
+
+---
+Built by students, for students 🎓
+Questions? Reply to this email or visit pathforge.vit.edu`);
+  
+  // Open email client with draft
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+// ── 3D card tilt ─────────────────────────────────────────────────────────
+document.querySelectorAll('.proof-card,.step,.analytic-card').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5;
+    const y=(e.clientY-r.top)/r.height-.5;
+    card.style.transform=`perspective(500px) rotateY(${x*10}deg) rotateX(${-y*8}deg) translateY(-4px)`;
+  });
+  card.addEventListener('mouseleave',()=>{card.style.transform='';});
+});
+</script>
+</body>
+</html>
